@@ -180,7 +180,7 @@ COOP_standard_dev <- COOP_daily_wy_aver %>%
 
 mean(COOP_standard_dev$residual)
 ```
-*the mean of the residuals is close enough to zero*
+*The mean of the residuals is close enough to zero*
 
 Calculating standard deviation for the timeseries
 ```{r COOP sd}
@@ -210,7 +210,7 @@ ggplot(COOP_standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear
   xlab('Water year')
 ```
 
-## Checking a random year ouf the timeseries. 
+## Checking a random year from the timeseries. 
 ```{r sd 87}
 COOP_standard_dev_87 <- COOP_standard_dev %>% 
   filter(waterYear == 1987) %>% 
@@ -224,18 +224,103 @@ COOP_standard_dev_87 <- COOP_standard_dev_87 %>%
 
 head(COOP_standard_dev_87$sd_2, 1)
 ```
-Looks good.
+*Looks good.*
 
-# Mann-Kendall & Sen’s Slope
+# Summer temperature standard deviation
 
-This is for the entire time series standard deviations (aka, not valid).
-```{r sd mk & ss}
+```{r COOP summer}
 
-sd_mk <- mk.test(COOP_standard_dev_all$sd_2)
-print(sd_mk)
+COOP_standard_dev_all_summer <- COOP_standard_dev %>%
+  filter(waterDay >= 244 & waterDay <= 335) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
 
-sd_sens <- sens.slope(COOP_standard_dev_all$sd_2)
-print(sd_sens)
+COOP_standard_dev_all_summer <- COOP_standard_dev_all_summer %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_summer %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+**Jun-Aug standard deviation for water years 1900-2021**
+
+## Mann-Kendall & Sen’s Slope
+
+Summer standard deviations.
+```{r sd mk & ss summer}
+
+sd_mk_summer <- mk.test(COOP_standard_dev_all_summer$sd_2)
+print(sd_mk_summer)
+
+sd_sens_summer <- sens.slope(COOP_standard_dev_all_summer$sd_2)
+print(sd_sens_summer)
 
 ```
 
+# Winter temperature standard deviation
+
+```{r COOP winter}
+
+COOP_standard_dev_all_winter <- COOP_standard_dev %>%
+  filter(waterDay >= 32 & waterDay <= 182) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+# Nope. This did some weird stuff with twice the observations.
+# COOP_standard_dev_all_winter <- COOP_standard_dev %>%
+#   filter(daymonth >= "01-11" & daymonth <= "31-03") %>%
+#   group_by(waterYear) %>% 
+#   mutate(nmbr = n())
+
+
+COOP_standard_dev_all_winter <- COOP_standard_dev_all_winter %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_winter %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+**Nov-Mar standard deviation for water years 1900-2021**
+
+## Mann-Kendall & Sen’s Slope
+
+Winter standard deviations.
+```{r sd mk & ss winter}
+
+sd_mk_winter <- mk.test(COOP_standard_dev_all_winter$sd_2)
+print(sd_mk_winter)
+
+sd_sens_winter <- sens.slope(COOP_standard_dev_all_winter$sd_2)
+print(sd_sens_winter)
+
+```

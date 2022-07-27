@@ -324,3 +324,5 @@ sd_sens_winter <- sens.slope(COOP_standard_dev_all_winter$sd_2)
 print(sd_sens_winter)
 
 ```
+
+Smaller time increments might be useful....

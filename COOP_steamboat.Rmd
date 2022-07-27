@@ -1,0 +1,241 @@
+---
+title: "COOP"
+author: "Brian"
+date: "7/27/2022"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Disclaimer 
+
+*This work is very preliminary as I get back into the coding swing of things. Data wrangling and figure generation will be done via R, but the rest of the project will be done using good ol' microsoft products. This is just an entry point into data crunching and should by no means be considered a final product.*
+
+# Steamboat COOP
+
+```{r libraries, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(snotelr)
+library(riem)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(dataRetrieval)
+library(lubridate)
+library(sf)
+library(ggthemes)
+library(xts)
+library(dygraphs)
+library(scales)
+library(openair)
+library(plotly)
+library(SciViews)
+knitr::opts_chunk$set(message = F, 
+                      warning = F,
+                      cache = T)
+knitr::opts_chunk$set(echo = TRUE)
+library(trend)
+library(nhdplusTools)
+library(lfstat)
+library(ggpubr)
+library(kableExtra)
+
+#Stats
+library(forcats)
+library(stringr)
+library(trend)
+
+# COOP/ Did not work
+#library(rnoaa)
+```
+
+# Coop Data
+
+NOAA/NWS Cooperative Observer Network
+
+Two stations near steamboat, according to this [site](https://wrcc.dri.edu/inventory/coop05.html). 
+057936 02 SBTC2 UNITED STATES CO ROUTT +7 STEAMBOAT SPRINGS 40 30 17 -106 51 58  6636
+057942 02 SSPC2 UNITED STATES CO ROUTT +7 STEAMBOAT SPRINGS 1 W 40 29 00 -106 51 00 6700
+
+Downloading from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/coop/fe.phtml?network=COCLIMATE). NOAA package not working, maybe due to user error. 
+
+```{r Read in Steamboat COOP, echo=TRUE}
+# coops_search(station_name = 057936,product = "air_temperature") # Handy R package did not work.
+
+coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+```
+
+### Data Cleaning
+
+```{r}
+
+str(coop_steamboat) # check the date, usually a character.
+
+coop_steamboat$Date <- mdy(coop_steamboat$day)
+
+coop_steamboat_clean <- coop_steamboat %>% # filter for the timeframe
+  addWaterYear() %>%
+  mutate(daymonth = format(as.Date(Date), "%d-%m")) %>% 
+  group_by(waterYear)%>% 
+  mutate(waterDay = (as.integer(difftime(Date, ymd(paste0(waterYear - 1 ,'-09-30')), units = "days")))) %>%   na.omit()
+
+write.csv(coop_steamboat_clean,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
+
+```
+
+### Figure check
+
+```{r S COOP simple plot}
+ggplot(coop_steamboat_clean, aes(x = Date, y = avg_T_c)) +
+  geom_line() + #lwd = 2) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('Daily temperature (°C)') + 
+  xlab('Date')
+
+#Check for outliers....
+
+#dygraph
+
+COOP_temp_xts <- xts(coop_steamboat_clean$avg_T_c, order.by = coop_steamboat_clean$Date)
+
+dygraph(COOP_temp_xts) %>%
+  dyAxis("y", label = "Daily temperature (°C)") 
+
+```
+
+## Detrending Data 
+
+```{r detrending data}
+#SF figured out the yearly average by water year
+
+#average water year temperature
+
+COOP_yearly_wy_aver <- coop_steamboat_clean %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+```
+
+```{r detrending data2}
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver <- COOP_yearly_wy_aver %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver <- COOP_daily_wy_aver %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver$aver_day_temp))
+
+#str(daily_wy_aver)
+
+```
+
+```{r Figure all year average temp}
+# try to show all years as means. 
+COOP_daily_wy_aver2 <- COOP_daily_wy_aver %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  group_by(waterDay) %>%
+  mutate(date_temp = mean(avg_T_c))
+  
+COOP_daily_wy_aver2$date_temp <- signif(COOP_daily_wy_aver2$date_temp,3) #reduce the sig figs
+
+ggplot(COOP_daily_wy_aver2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  #geom_smooth(method = "lm", se=FALSE) +
+  ylab('Average Daily temperature (°C)') + 
+  xlab('Day of water year')
+```
+
+
+```{r xts Figure all year average temp, eval=FALSE, include=FALSE}
+COOP_temp_xts_2 <- xts(COOP_daily_wy_aver2$date_temp, order.by = as.Date(COOP_daily_wy_aver2$waterDay))
+
+dygraph(COOP_temp_xts_2) %>%
+  dyAxis("y", label = "(°C)") 
+
+# **Day of year average temperature for the 1987-2021 period of record for Steamboat COOP site. *(x-axis is day of year, not date)* **
+```
+
+# Standard Deviation 
+
+To figure out the standard deviation for each year, I want the "residual" for each daily value. 
+
+The standard deviation will be the daily residual minus the mean of the residuals by water year, summed and squared, then divided by the number of observations minus one. The square root of the resulting value of which is thus the standard deviation for the water year. 
+
+Determining residuals
+```{r COOP residuals}
+COOP_standard_dev <- COOP_daily_wy_aver %>% 
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+mean(COOP_standard_dev$residual)
+```
+*the mean of the residuals is close enough to zero*
+
+Calculating standard deviation for the timeseries
+```{r COOP sd}
+COOP_standard_dev_all <- COOP_standard_dev %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all <- COOP_standard_dev_all %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+```
+
+## Checking a random year ouf the timeseries. 
+```{r sd 87}
+COOP_standard_dev_87 <- COOP_standard_dev %>% 
+  filter(waterYear == 1987) %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+           mutate(sd_1 = residual-resid_mean)
+
+COOP_standard_dev_87 <- COOP_standard_dev_87 %>%
+  group_by(waterYear) %>%
+  mutate(sd_2 = (((sum((sd_1)^2))/((sum(tabulate(COOP_standard_dev_87$waterDay)))-1)))^(0.5))
+
+head(COOP_standard_dev_87$sd_2, 1)
+```
+Looks good.
+
+# Mann-Kendall & Sen’s Slope
+
+This is for the entire time series standard deviations (aka, not valid).
+```{r sd mk & ss}
+
+sd_mk <- mk.test(COOP_standard_dev_all$sd_2)
+print(sd_mk)
+
+sd_sens <- sens.slope(COOP_standard_dev_all$sd_2)
+print(sd_sens)
+
+```
+

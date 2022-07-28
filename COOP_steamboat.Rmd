@@ -333,7 +333,7 @@ Smaller time increments might be useful....
 
 # 1987 - 2021
 
-Just to compare it to the Tower site: 
+In comparison to the Tower SNOTEL site: 
 
 ```{r COOP to Tower}
 
@@ -501,7 +501,7 @@ ggplot(COOP_standard_dev_all_87_21_winter, aes(x = waterYear, y = sd_2))+#, colo
 
 1987 - 2021 winter Mann-Kendall & Sen’s Slope
 
-```{r sd mk & ss 87-21 winter}
+```{r COOP sd mk & ss 87-21 winter}
 
 sd_mk_87_21_winter <- mk.test(COOP_standard_dev_all_87_21_winter$sd_2)
 print(sd_mk_87_21_winter)
@@ -512,3 +512,744 @@ print(sd_sens_87_21_winter)
 ```
 
 Neither the 1987 - 2021 as a whole, nor the seasonal time series demonstrate trends that are statistically significant. 
+
+# 1900-1915 minimum and maximum temperatures
+
+Jan 7, 1913 had the lowest recorded temperature. This just looks at the max and min temperatures for that early part of the record. 
+```{r 1913 min}
+
+early_coop <- coop_steamboat_clean %>% 
+  filter(waterYear >= 1900 & waterYear <= 1915)
+
+COOP_temp_min_xts <- xts(early_coop$min_T_c, order.by = early_coop$Date)
+
+dygraph(COOP_temp_min_xts) %>%
+  dyAxis("y", label = "Daily min temperature (°C)") 
+
+
+```
+
+*Daily minimum temperatures for water years 1900-1915*
+
+```{r 1913 max}
+
+COOP_temp_max_xts <- xts(early_coop$max_T_c, order.by = early_coop$Date)
+
+dygraph(COOP_temp_max_xts) %>%
+  dyAxis("y", label = "Daily max temperature (°C)") 
+
+
+```
+
+*Daily minimum temperatures for water years 1900-1915*
+
+
+# **By groups of decades**
+
+## 1900-1930 
+
+```{r COOP 1900-1930}
+
+#average water year temperature
+
+COOP_yearly_wy_aver_00_30 <- coop_steamboat_clean %>%
+  filter(waterYear >= 1900 & waterYear <= 1930) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_00_30 <- COOP_yearly_wy_aver_00_30 %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_00_30 <- COOP_daily_wy_aver_00_30 %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_00_30$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+  
+
+COOP_standard_dev_00_30 <- COOP_daily_wy_aver_00_30 %>% 
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+COOP_standard_dev_00_30 <- COOP_standard_dev_00_30 %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+
+COOP_standard_dev_00_30 %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_00_30, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**SD for water years 1900 - 1930**
+
+1900 - 1930  Mann-Kendall & Sen’s Slope
+
+```{r COOP 00-30 tests}
+
+sd_mk_00_30 <- mk.test(COOP_standard_dev_00_30$sd_2)
+print(sd_mk_00_30)
+
+sd_sens_00_30 <- sens.slope(COOP_standard_dev_00_30$sd_2)
+print(sd_sens_00_30)
+
+```
+
+### Summer and Winter 00-30
+
+Summer temperature standard deviation
+
+```{r COOP 00-30 summer}
+
+# using the 1900- 1930 data frame
+
+COOP_standard_dev_all_00_30_summer <- COOP_daily_wy_aver_00_30 %>%
+  filter(waterDay >= 244 & waterDay <= 335) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_00_30_summer <- COOP_standard_dev_all_00_30_summer %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_00_30_summer %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_00_30_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Summer season SD for water years 1900 - 1930**
+
+Mann-Kendall & Sen’s Slope
+
+Summer 00-30 standard deviations.
+```{r COOP sd mk & ss 00-30 summer}
+
+sd_mk_00_30_summer <- mk.test(COOP_standard_dev_all_00_30_summer$sd_2)
+print(sd_mk_00_30_summer)
+
+sd_sens_00_30_summer <- sens.slope(COOP_standard_dev_all_00_30_summer$sd_2)
+print(sd_sens_00_30_summer)
+
+```
+
+ Winter temperature standard deviation
+
+```{r COOP 00-30 winter}
+
+# using the 00-30 data frame
+
+COOP_standard_dev_all_00_30_winter <- COOP_daily_wy_aver_00_30 %>%
+  filter(waterDay >= 32 & waterDay <= 182) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_00_30_winter <- COOP_standard_dev_all_00_30_winter %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_00_30_winter %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_00_30_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Winter season SD for water years 1900 - 1930**
+
+ Mann-Kendall & Sen’s Slope
+
+1900 - 1930 winter Mann-Kendall & Sen’s Slope
+
+```{r COOP sd mk & ss 00-30 winter}
+
+sd_mk_00_30_winter <- mk.test(COOP_standard_dev_all_00_30_winter$sd_2)
+print(sd_mk_00_30_winter)
+
+sd_sens_00_30_winter <- sens.slope(COOP_standard_dev_all_00_30_winter$sd_2)
+print(sd_sens_00_30_winter)
+
+```
+
+
+## 1931-1960 
+
+```{r COOP 1931-1960}
+
+#average water year temperature
+
+COOP_yearly_wy_aver_31_60 <- coop_steamboat_clean %>%
+  filter(waterYear >= 1931 & waterYear <= 1960) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_31_60 <- COOP_yearly_wy_aver_31_60 %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_31_60 <- COOP_daily_wy_aver_31_60 %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_31_60$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+  
+
+COOP_standard_dev_31_60 <- COOP_daily_wy_aver_31_60 %>% 
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+COOP_standard_dev_31_60 <- COOP_standard_dev_31_60 %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+
+COOP_standard_dev_31_60 %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_31_60, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**SD for water years 1931 - 1960**
+
+1931 - 1960  Mann-Kendall & Sen’s Slope
+
+```{r COOP 31-60 tests}
+
+sd_mk_31_60 <- mk.test(COOP_standard_dev_31_60$sd_2)
+print(sd_mk_31_60)
+
+sd_sens_31_60 <- sens.slope(COOP_standard_dev_31_60$sd_2)
+print(sd_sens_31_60)
+
+```
+
+### Summer and Winter 31-60
+
+ Summer temperature standard deviation
+
+```{r COOP 31-60 summer}
+
+# using the 1931- 1960 data frame
+
+COOP_standard_dev_all_31_60_summer <- COOP_daily_wy_aver_31_60 %>%
+  filter(waterDay >= 244 & waterDay <= 335) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_31_60_summer <- COOP_standard_dev_all_31_60_summer %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_31_60_summer %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_31_60_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Summer season SD for water years 1931 - 1960**
+
+Mann-Kendall & Sen’s Slope
+
+Summer 31-60 standard deviations.
+```{r COOP sd mk & ss 31-60 summer}
+
+sd_mk_31_60_summer <- mk.test(COOP_standard_dev_all_31_60_summer$sd_2)
+print(sd_mk_31_60_summer)
+
+sd_sens_31_60_summer <- sens.slope(COOP_standard_dev_all_31_60_summer$sd_2)
+print(sd_sens_31_60_summer)
+
+```
+
+Winter temperature standard deviation
+
+```{r COOP 31-60 winter}
+
+# using the 31-60 data frame
+
+COOP_standard_dev_all_31_60_winter <- COOP_daily_wy_aver_31_60 %>%
+  filter(waterDay >= 32 & waterDay <= 182) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_31_60_winter <- COOP_standard_dev_all_31_60_winter %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_31_60_winter %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_31_60_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Winter season SD for water years 1931 - 1960**
+
+Mann-Kendall & Sen’s Slope
+
+1900 - 1930 winter Mann-Kendall & Sen’s Slope
+
+```{r COOP sd mk & ss 31-60 winter}
+
+sd_mk_31_60_winter <- mk.test(COOP_standard_dev_all_31_60_winter$sd_2)
+print(sd_mk_00_30_winter)
+
+sd_sens_31_60_winter <- sens.slope(COOP_standard_dev_all_31_60_winter$sd_2)
+print(sd_sens_31_60_winter)
+
+```
+
+
+## 1961-1990 
+
+
+```{r COOP 1961-1990}
+
+#average water year temperature
+
+COOP_yearly_wy_aver_61_90 <- coop_steamboat_clean %>%
+  filter(waterYear >= 1961 & waterYear <= 1990) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_61_90 <- COOP_yearly_wy_aver_61_90 %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_61_90 <- COOP_daily_wy_aver_61_90 %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_61_90$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+  
+
+COOP_standard_dev_61_90 <- COOP_daily_wy_aver_61_90 %>% 
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+COOP_standard_dev_61_90 <- COOP_standard_dev_61_90 %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+
+COOP_standard_dev_61_90 %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_61_90, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**SD for water years 1961 - 1990**
+
+1961 - 1990  Mann-Kendall & Sen’s Slope
+
+```{r COOP 61-90 tests}
+
+sd_mk_61_90 <- mk.test(COOP_standard_dev_61_90$sd_2)
+print(sd_mk_61_90)
+
+sd_sens_61_90 <- sens.slope(COOP_standard_dev_61_90$sd_2)
+print(sd_sens_61_90)
+
+```
+
+### Summer and Winter 61-90
+
+Summer temperature standard deviation
+
+```{r COOP 61-90 summer}
+
+# using the 1961- 1990 data frame
+
+COOP_standard_dev_all_61_90_summer <- COOP_daily_wy_aver_61_90 %>%
+  filter(waterDay >= 244 & waterDay <= 335) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_61_90_summer <- COOP_standard_dev_all_61_90_summer %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_61_90_summer %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_61_90_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Summer season SD for water years 1961 - 1990**
+
+Mann-Kendall & Sen’s Slope
+
+Summer 61-90 standard deviations.
+```{r COOP sd mk & ss 61-90 summer}
+
+sd_mk_61_90_summer <- mk.test(COOP_standard_dev_all_61_90_summer$sd_2)
+print(sd_mk_61_90_summer)
+
+sd_sens_61_90_summer <- sens.slope(COOP_standard_dev_all_61_90_summer$sd_2)
+print(sd_sens_61_90_summer)
+
+```
+
+Winter temperature standard deviation
+
+```{r COOP 61-90 winter}
+
+# using the 61-90 data frame
+
+COOP_standard_dev_all_61_90_winter <- COOP_daily_wy_aver_61_90 %>%
+  filter(waterDay >= 32 & waterDay <= 182) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_61_90_winter <- COOP_standard_dev_all_61_90_winter %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_61_90_winter %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_61_90_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Winter season SD for water years 1961 - 1990**
+
+Mann-Kendall & Sen’s Slope
+
+1961 - 1990 winter Mann-Kendall & Sen’s Slope
+
+```{r COOP sd mk & ss 61-90 winter}
+
+sd_mk_61_90_winter <- mk.test(COOP_standard_dev_all_61_90_winter$sd_2)
+print(sd_mk_61_90_winter)
+
+sd_sens_61_90_winter <- sens.slope(COOP_standard_dev_all_61_90_winter$sd_2)
+print(sd_sens_61_90_winter)
+
+```
+
+## 1991-2020
+
+```{r COOP 1991-2020}
+
+#average water year temperature
+
+COOP_yearly_wy_aver_91_20 <- coop_steamboat_clean %>%
+  filter(waterYear >= 1991 & waterYear <= 2020) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_91_20 <- COOP_yearly_wy_aver_91_20 %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_91_20 <- COOP_daily_wy_aver_91_20 %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_91_20$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+  
+
+COOP_standard_dev_91_20 <- COOP_daily_wy_aver_61_90 %>% 
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual)))
+
+COOP_standard_dev_91_20 <- COOP_standard_dev_91_20 %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+
+COOP_standard_dev_91_20 %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_91_20, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**SD for water years 1991 - 2020**
+
+1991 - 2020  Mann-Kendall & Sen’s Slope
+
+```{r COOP 91-20 tests}
+
+sd_mk_91_20 <- mk.test(COOP_standard_dev_91_20$sd_2)
+print(sd_mk_91_20)
+
+sd_sens_91_20 <- sens.slope(COOP_standard_dev_91_20$sd_2)
+print(sd_sens_91_20)
+
+```
+
+### Summer and Winter 91-20
+
+Summer temperature standard deviation
+
+```{r COOP 91-20 summer}
+
+# using the 1991- 2020 data frame
+
+COOP_standard_dev_all_91_20_summer <- COOP_daily_wy_aver_91_20 %>%
+  filter(waterDay >= 244 & waterDay <= 335) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_91_20_summer <- COOP_standard_dev_all_91_20_summer %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_91_20_summer %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_91_20_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Summer season SD for water years 1991 - 2020**
+
+Mann-Kendall & Sen’s Slope
+
+Summer 91-20 standard deviations.
+```{r COOP sd mk & ss 91-20 summer}
+
+sd_mk_91_20_summer <- mk.test(COOP_standard_dev_all_91_20_summer$sd_2)
+print(sd_mk_91_20_summer)
+
+sd_sens_91_20_summer <- sens.slope(COOP_standard_dev_all_91_20_summer$sd_2)
+print(sd_sens_91_20_summer)
+
+```
+
+Winter temperature standard deviation
+
+```{r COOP 91-20 winter}
+
+# using the 91-20 data frame
+
+COOP_standard_dev_all_91_20_winter <- COOP_daily_wy_aver_91_20 %>%
+  filter(waterDay >= 32 & waterDay <= 182) %>% # this might be better off as daymonth rather than day of water year due to leap year
+  group_by(waterYear) %>% 
+  mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
+  mutate(deviation = abs(residual-lag(residual))) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+COOP_standard_dev_all_91_20_winter <- COOP_standard_dev_all_91_20_winter %>% 
+  group_by(waterYear) %>% 
+  mutate(resid_mean = mean(residual)) %>%
+  mutate(sd_1 = residual-resid_mean) %>% 
+  mutate(sd_2 = (((sum((sd_1)^2))/((nmbr-1))))^(0.5)) %>%
+  distinct(sd_2, .keep_all = TRUE) %>% 
+   select(waterYear, sd_2)
+
+COOP_standard_dev_all_91_20_winter %>% 
+  kable(.,'html') %>%
+  kable_styling() %>%
+  scroll_box(width='250px',height='500px')
+
+ggplot(COOP_standard_dev_all_91_20_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Winter season SD for water years 1991 - 2020**
+
+Mann-Kendall & Sen’s Slope
+
+1991 - 2020 winter Mann-Kendall & Sen’s Slope
+
+```{r COOP sd mk & ss 91-20 winter}
+
+sd_mk_91_20_winter <- mk.test(COOP_standard_dev_all_91_20_winter$sd_2)
+print(sd_mk_91_20_winter)
+
+sd_sens_91_20_winter <- sens.slope(COOP_standard_dev_all_91_20_winter$sd_2)
+print(sd_sens_91_20_winter)
+
+```
+

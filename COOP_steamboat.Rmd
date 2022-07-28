@@ -210,6 +210,8 @@ ggplot(COOP_standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear
   xlab('Water year')
 ```
 
+
+
 ## Checking a random year from the timeseries. 
 ```{r sd 87}
 COOP_standard_dev_87 <- COOP_standard_dev %>% 
@@ -257,6 +259,7 @@ ggplot(COOP_standard_dev_all_summer, aes(x = waterYear, y = sd_2))+#, color = wa
   xlab('Water year')
 
 ```
+
 **Jun-Aug standard deviation for water years 1900-2021**
 
 ## Mann-Kendall & Sen’s Slope
@@ -310,6 +313,7 @@ ggplot(COOP_standard_dev_all_winter, aes(x = waterYear, y = sd_2))+#, color = wa
   xlab('Water year')
 
 ```
+
 **Nov-Mar standard deviation for water years 1900-2021**
 
 ## Mann-Kendall & Sen’s Slope
@@ -326,3 +330,104 @@ print(sd_sens_winter)
 ```
 
 Smaller time increments might be useful....
+
+## 1987 - 2021
+
+Just to compare it to the Tower site, 
+
+```{r COOP to Tower}
+
+COOP_standard_dev_87_21 <- COOP_standard_dev_all %>% 
+  filter(waterYear >= 1987 & waterYear <= 2021)
+
+ggplot(COOP_standard_dev_87_21, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**SD for water years 1987 - 2021**
+
+1987 - 2021  Mann-Kendall & Sen’s Slope
+
+```{r COOP to Tower tests}
+
+sd_mk_87_21 <- mk.test(COOP_standard_dev_87_21$sd_2)
+print(sd_mk_87_21)
+
+sd_sens_87_21 <- sens.slope(COOP_standard_dev_87_21$sd_2)
+print(sd_sens_87_21)
+
+```
+
+## Summer and Winter 87-21
+
+```{r summer and winter COOP to Tower}
+
+COOP_standard_dev_87_21_summer <- COOP_standard_dev_all_summer %>% 
+  filter(waterYear >= 1987 & waterYear <= 2021)
+
+COOP_standard_dev_87_21_winter <- COOP_standard_dev_all_winter %>% 
+  filter(waterYear >= 1987 & waterYear <= 2021)
+
+```
+
+```{r summer 87 to 21 plots}
+
+ggplot(COOP_standard_dev_87_21_summer, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Summer season SD for water years 1987 - 2021**
+
+1987 - 2021 summer Mann-Kendall & Sen’s Slope
+
+```{r sd mk & ss 87-21 summer}
+
+sd_mk_87_21_summer <- mk.test(COOP_standard_dev_87_21_summer$sd_2)
+print(sd_mk_87_21_summer)
+
+sd_sens_87_21_summer <- sens.slope(COOP_standard_dev_87_21_summer$sd_2)
+print(sd_sens_87_21_summer)
+
+```
+
+
+```{r winter 87 to 21 plots}
+
+ggplot(COOP_standard_dev_87_21_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  #geom_line(aes) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('SD') + 
+  xlab('Water year')
+
+```
+
+**Winter season SD for water years 1987 - 2021**
+
+
+1987 - 2021 winter Mann-Kendall & Sen’s Slope
+
+```{r sd mk & ss 87-21 winter}
+
+sd_mk_87_21_winter <- mk.test(COOP_standard_dev_87_21_winter$sd_2)
+print(sd_mk_87_21_winter)
+
+sd_sens_87_21_winter <- sens.slope(COOP_standard_dev_87_21_winter$sd_2)
+print(sd_sens_87_21_winter)
+
+```
+
+Neither the 1987 - 2021 as a whole, nor the seasonal time series demonstrate trends that are statistically significant. 

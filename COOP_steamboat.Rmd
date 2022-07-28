@@ -887,12 +887,12 @@ ggplot(COOP_standard_dev_all_31_60_winter, aes(x = waterYear, y = sd_2))+#, colo
 
 Mann-Kendall & Sen’s Slope
 
-1900 - 1930 winter Mann-Kendall & Sen’s Slope
+1931 - 1960 winter Mann-Kendall & Sen’s Slope
 
 ```{r COOP sd mk & ss 31-60 winter}
 
 sd_mk_31_60_winter <- mk.test(COOP_standard_dev_all_31_60_winter$sd_2)
-print(sd_mk_00_30_winter)
+print(sd_mk_31_60_winter)
 
 sd_sens_31_60_winter <- sens.slope(COOP_standard_dev_all_31_60_winter$sd_2)
 print(sd_sens_31_60_winter)

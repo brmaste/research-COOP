@@ -3535,8 +3535,9 @@ print(sd_sens_winter)</code></pre>
 ## 0.0003806778</code></pre>
 <p>Smaller time increments might be useful….</p>
 </div>
-<div id="section" class="section level2">
-<h2>1987 - 2021</h2>
+</div>
+<div id="section" class="section level1">
+<h1>1987 - 2021</h1>
 <p>Just to compare it to the Tower site,</p>
 <pre class="r"><code>COOP_standard_dev_87_21 &lt;- COOP_standard_dev_all %&gt;% 
   filter(waterYear &gt;= 1987 &amp; waterYear &lt;= 2021)
@@ -3575,7 +3576,6 @@ print(sd_sens_87_21)</code></pre>
 ## sample estimates:
 ## Sen&#39;s slope 
 ##  -0.0031307</code></pre>
-</div>
 <div id="summer-and-winter-87-21" class="section level2">
 <h2>Summer and Winter 87-21</h2>
 <pre class="r"><code>COOP_standard_dev_87_21_summer &lt;- COOP_standard_dev_all_summer %&gt;% 

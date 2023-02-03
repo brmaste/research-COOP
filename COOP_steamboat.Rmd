@@ -62,15 +62,21 @@ Two stations near steamboat, according to this [site](https://wrcc.dri.edu/inven
 
 Downloading from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/coop/fe.phtml?network=COCLIMATE). NOAA package not working, maybe due to user error. 
 
-```{r Read in Steamboat COOP, echo=TRUE}
+```{r Read in Steamboat COOP, eval=FALSE, include=FALSE}
 # coops_search(station_name = 057936,product = "air_temperature") # Handy R package did not work.
 
-coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+# At home:
+#coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+
+# From Campus:
+coop_steamboat <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+
+
 ```
 
 ### Data Cleaning
 
-```{r}
+```{r data clean, eval=FALSE, include=FALSE}
 
 str(coop_steamboat) # check the date, usually a character.
 
@@ -82,13 +88,29 @@ coop_steamboat_clean <- coop_steamboat %>% # filter for the timeframe
   group_by(waterYear)%>% 
   mutate(waterDay = (as.integer(difftime(Date, ymd(paste0(waterYear - 1 ,'-09-30')), units = "days")))) %>%   na.omit()
 
-write.csv(coop_steamboat_clean,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
+#For home:
+#write.csv(coop_steamboat_clean,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamb#oat_clean.csv", row.names = FALSE)
+
+# for campus:
+write.csv(coop_steamboat_clean,"C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
 
 ```
+
+```{r read in on campus}
+
+coop_steamboat_clean <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", header = TRUE)
+
+```
+
 
 ### Figure check
 
 ```{r S COOP simple plot}
+
+coop_steamboat_clean$Date <- ymd(coop_steamboat_clean$Date)
+
+str(coop_steamboat_clean)
+
 ggplot(coop_steamboat_clean, aes(x = Date, y = avg_T_c)) +
   geom_line() + #lwd = 2) +
   theme_few() +
@@ -1253,3 +1275,201 @@ print(sd_sens_91_20_winter)
 
 ```
 
+# Comparing Climate Normal means
+
+(from 356:)
+
+## 1991-2022
+
+```{r 1991-2022 CN detrend}
+COOP_yearly_wy_aver_1991_2022_CN <- coop_steamboat_clean %>%
+  filter(waterYear >= 1991 & waterYear <= 2022) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_1991_2022_CN <- COOP_yearly_wy_aver_1991_2022_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_1991_2022_CN <- COOP_daily_wy_aver_1991_2022_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_1991_2022_CN$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+
+```
+
+
+```{r CN 1991-2022 means figure}
+COOP_daily_wy_aver_1991_2022_CN2 <- COOP_daily_wy_aver_1991_2022_CN %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  group_by(waterDay) %>%
+  mutate(date_temp = mean(avg_T_c))%>% 
+  select(waterDay, date_temp) %>% 
+  distinct(waterDay, .keep_all = TRUE)
+  
+COOP_daily_wy_aver_1991_2022_CN2$date_temp <- signif(COOP_daily_wy_aver_1991_2022_CN2$date_temp,3) #reduce the sig figs
+
+ggplot(COOP_daily_wy_aver_1991_2022_CN2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  theme_few()
+
+```
+
+## 1961-1990
+
+```{r 1961-1990 CN detrend}
+COOP_yearly_wy_aver_1961_1990_CN <- coop_steamboat_clean %>%
+  filter(waterYear >= 1961 & waterYear <= 1990) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_1961_1990_CN <- COOP_yearly_wy_aver_1961_1990_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_1961_1990_CN <- COOP_daily_wy_aver_1961_1990_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_1961_1990_CN$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+
+```
+
+
+```{r CN 1961-1990 means figure}
+COOP_daily_wy_aver_1961_1990_CN2 <- COOP_daily_wy_aver_1961_1990_CN %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  group_by(waterDay) %>%
+  mutate(date_temp = mean(avg_T_c))%>% 
+  select(waterDay, date_temp) %>% 
+  distinct(waterDay, .keep_all = TRUE)
+  
+COOP_daily_wy_aver_1961_1990_CN2$date_temp <- signif(COOP_daily_wy_aver_1961_1990_CN2$date_temp,3) #reduce the sig figs
+
+ggplot(COOP_daily_wy_aver_1961_1990_CN2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  theme_few()
+
+```
+
+## 1931-1960
+
+```{r 1931-1960 CN detrend}
+COOP_yearly_wy_aver_1931_1960_CN <- coop_steamboat_clean %>%
+  filter(waterYear >= 1931 & waterYear <= 1960) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_1931_1960_CN <- COOP_yearly_wy_aver_1931_1960_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_1931_1960_CN <- COOP_daily_wy_aver_1931_1960_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_1931_1960_CN$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+
+```
+
+
+```{r CN 1931-1960 means figure}
+COOP_daily_wy_aver_1931_1960_CN2 <- COOP_daily_wy_aver_1931_1960_CN %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  group_by(waterDay) %>%
+  mutate(date_temp = mean(avg_T_c))%>% 
+  select(waterDay, date_temp)  %>% 
+  distinct(waterDay, .keep_all = TRUE)
+  
+COOP_daily_wy_aver_1931_1960_CN2$date_temp <- signif(COOP_daily_wy_aver_1931_1960_CN2$date_temp,3) #reduce the sig figs
+
+ggplot(COOP_daily_wy_aver_1931_1960_CN2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  theme_few()
+
+```
+
+## 1900-1930
+
+```{r 1901-1930 CN detrend}
+COOP_yearly_wy_aver_1901_1930_CN <- coop_steamboat_clean %>%
+  filter(waterYear >= 1901 & waterYear <= 1930) %>% 
+  group_by(waterYear) %>% 
+  mutate(aver_ann_temp = mean(avg_T_c))
+
+#Average temperature by day for all water years:
+
+COOP_daily_wy_aver_1901_1930_CN <- COOP_yearly_wy_aver_1901_1930_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(aver_day_temp = mean(aver_ann_temp))
+
+#average mean temperature by day for the period of record:
+
+COOP_daily_wy_aver_1901_1930_CN <- COOP_daily_wy_aver_1901_1930_CN %>% 
+  group_by(daymonth) %>% 
+  mutate(all_ave_temp = mean(COOP_daily_wy_aver_1901_1930_CN$aver_day_temp)) %>% 
+  group_by(waterYear) %>% 
+  mutate(nmbr = n())
+
+
+```
+
+
+```{r CN 1901-1930 means figure}
+COOP_daily_wy_aver_1901_1930_CN2 <- COOP_daily_wy_aver_1901_1930_CN %>% 
+  #filter(waterYear == "1987" | waterYear == "2021") %>%
+  group_by(waterDay) %>%
+  mutate(date_temp = mean(avg_T_c))%>% 
+  select(waterDay, date_temp) %>% 
+  distinct(waterDay, .keep_all = TRUE)
+
+
+COOP_daily_wy_aver_1901_1930_CN2$date_temp <- signif(COOP_daily_wy_aver_1901_1930_CN2$date_temp,3) #reduce the sig figs
+
+ggplot(COOP_daily_wy_aver_1901_1930_CN2, aes(x = waterDay, y = date_temp))+#, color = waterYear)) +
+  geom_line(size= 0.7) +
+  theme_few()
+
+```
+
+```{r}
+
+climate_norm <- left_join(COOP_daily_wy_aver_1991_2022_CN2, COOP_daily_wy_aver_1961_1990_CN2, by= 'waterDay') 
+
+climate_norm <- left_join(climate_norm, COOP_daily_wy_aver_1931_1960_CN2, by= 'waterDay')
+
+climate_norm <- left_join(climate_norm, COOP_daily_wy_aver_1901_1930_CN2, by= 'waterDay')
+
+ggplot(climate_norm, aes(x=waterDay)) +  
+         #scale_size_manual(values=c("FALSE"=5,"TRUE"=8)) +
+  #scale_color_manual(values=c("FALSE"='#CC0000',"TRUE"='black')) +
+geom_line(aes(y = date_temp.x), size =1, color = "orange")+
+  geom_line(aes(y = date_temp.y), size =1, color = "darkgreen")+
+  geom_line(aes(y = date_temp.x.x), size =1, color = "purple")+
+  geom_line(aes(y = date_temp.y.y), size =1, color= "red")+
+  theme_few()+
+  scale_colour_manual("", breaks=c("date_temp.x","date_temp.y","date_temp.x.x", "date_temp.y.y"), values=c("date_temp.x" = "orange", "date_temp.y" = "darkgreen", "date_temp.x.x" = "purple", "date_temp.y.y" = "red"))+
+  xlab("Day of Year")+
+  ylab("Average temperature")
+
+
+
+    
+```
+Four

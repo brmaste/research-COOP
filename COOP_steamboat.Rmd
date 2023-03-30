@@ -14,6 +14,8 @@ editor_options:
 
 *This work is very preliminary as I get back into the coding swing of things. Data wrangling and figure generation will be done via R, but the rest of the project will be done using good ol' microsoft products. This is just an entry point into data crunching and should by no means be considered a final product.*
 
+3/30/2023 update, corrected a minor error in methodology.
+
 # Steamboat COOP
 
 ```{r libraries, include=FALSE}
@@ -66,10 +68,10 @@ Downloading from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.
 # coops_search(station_name = 057936,product = "air_temperature") # Handy R package did not work.
 
 # At home:
-#coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+coop_steamboat <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
 
 # From Campus:
-coop_steamboat <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
+#coop_steamboat <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_raw/steamboat_nwscoop_1900_2022.csv", header = TRUE)
 
 
 ```
@@ -89,16 +91,16 @@ coop_steamboat_clean <- coop_steamboat %>% # filter for the timeframe
   mutate(waterDay = (as.integer(difftime(Date, ymd(paste0(waterYear - 1 ,'-09-30')), units = "days")))) %>%   na.omit()
 
 #For home:
-#write.csv(coop_steamboat_clean,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamb#oat_clean.csv", row.names = FALSE)
+write.csv(coop_steamboat_clean,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
 
 # for campus:
-write.csv(coop_steamboat_clean,"C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
+#write.csv(coop_steamboat_clean,"C:/Users/bsteen/OneDrive - #Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", row.names = FALSE)
 
 ```
 
 ```{r read in on campus}
 
-coop_steamboat_clean <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", header = TRUE)
+#coop_steamboat_clean <- read.csv("C:/Users/bsteen/OneDrive - #Colostate/Documents/MS_Research/research-COOP/data_clean/coop_steamboat_clean.csv", header = TRUE)
 
 ```
 
@@ -106,6 +108,9 @@ coop_steamboat_clean <- read.csv("C:/Users/bsteen/OneDrive - Colostate/Documents
 ### Figure check
 
 ```{r S COOP simple plot}
+
+# from home
+coop_steamboat_clean <- read.csv("C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/coop_steamboat_clean.csv", header = TRUE)
 
 coop_steamboat_clean$Date <- ymd(coop_steamboat_clean$Date)
 
@@ -147,7 +152,7 @@ COOP_yearly_wy_aver <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver <- COOP_yearly_wy_aver %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -372,7 +377,7 @@ COOP_yearly_wy_aver_87_21 <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_87_21 <- COOP_yearly_wy_aver_87_21 %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -583,7 +588,7 @@ COOP_yearly_wy_aver_00_30 <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_00_30 <- COOP_yearly_wy_aver_00_30 %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -760,7 +765,7 @@ COOP_yearly_wy_aver_31_60 <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_31_60 <- COOP_yearly_wy_aver_31_60 %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -938,7 +943,7 @@ COOP_yearly_wy_aver_61_90 <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_61_90 <- COOP_yearly_wy_aver_61_90 %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1114,7 +1119,7 @@ COOP_yearly_wy_aver_91_20 <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_91_20 <- COOP_yearly_wy_aver_91_20 %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1291,7 +1296,7 @@ COOP_yearly_wy_aver_1991_2022_CN <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_1991_2022_CN <- COOP_yearly_wy_aver_1991_2022_CN %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1333,7 +1338,7 @@ COOP_yearly_wy_aver_1961_1990_CN <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_1961_1990_CN <- COOP_yearly_wy_aver_1961_1990_CN %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1375,7 +1380,7 @@ COOP_yearly_wy_aver_1931_1960_CN <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_1931_1960_CN <- COOP_yearly_wy_aver_1931_1960_CN %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1417,7 +1422,7 @@ COOP_yearly_wy_aver_1901_1930_CN <- coop_steamboat_clean %>%
 
 COOP_daily_wy_aver_1901_1930_CN <- COOP_yearly_wy_aver_1901_1930_CN %>% 
   group_by(daymonth) %>% 
-  mutate(aver_day_temp = mean(aver_ann_temp))
+  mutate(aver_day_temp = mean(avg_T_c))
 
 #average mean temperature by day for the period of record:
 
@@ -1472,4 +1477,4 @@ geom_line(aes(y = date_temp.x), size =1, color = "orange")+
 
     
 ```
-Four
+

@@ -49,6 +49,7 @@ library(kableExtra)
 library(forcats)
 library(stringr)
 library(trend)
+library(readxl)
 
 # COOP/ Did not work
 #library(rnoaa)
@@ -235,7 +236,100 @@ ggplot(COOP_standard_dev_all, aes(x = waterYear, y = sd_2))+#, color = waterYear
   geom_smooth(method = "lm", se=FALSE) +
   ylab('SD') + 
   xlab('Water year')
+
 ```
+
+# Update 5/4/2023
+
+```{r saving sd df for SF}
+
+write.csv(COOP_standard_dev_all,"C:/Users/13074/Documents/ESS580/thesis_project/research-COOP/data_clean/COOP_standard_dev_all.csv", row.names = FALSE)
+
+```
+
+```{r autocorrelation for SD by ten years}
+
+# THIS IS A NIGHTMARE (but it worked).
+
+auto_cor_SD <-COOP_standard_dev_all %>% 
+  mutate(Decade = paste0(waterYear  %/% 10 * 10))
+
+acf_1900 <- auto_cor_SD %>%
+  filter(Decade == "1900")
+acf_1910 <- auto_cor_SD %>%
+  filter(Decade == "1910")
+acf_1920 <- auto_cor_SD %>%
+  filter(Decade == "1920")
+acf_1930 <- auto_cor_SD %>%
+  filter(Decade == "1930")
+acf_1940 <- auto_cor_SD %>%
+  filter(Decade == "1940")
+acf_1950 <- auto_cor_SD %>%
+  filter(Decade == "1950")
+acf_1960 <- auto_cor_SD %>%
+  filter(Decade == "1960")
+acf_1970 <- auto_cor_SD %>%
+  filter(Decade == "1970")
+acf_1980 <- auto_cor_SD %>%
+  filter(Decade == "1980")
+acf_1990 <- auto_cor_SD %>%
+  filter(Decade == "1990")
+acf_2000 <- auto_cor_SD %>%
+  filter(Decade == "2000")
+acf_2010 <- auto_cor_SD %>%
+  filter(Decade == "2010" | Decade == "2020")
+
+acf(acf_1900$sd_2, lag=5, pl=FALSE)
+acf(acf_1910$sd_2, lag=5, pl=FALSE)
+acf(acf_1920$sd_2, lag=5, pl=FALSE)
+acf(acf_1930$sd_2, lag=5, pl=FALSE)
+acf(acf_1940$sd_2, lag=5, pl=FALSE)
+acf(acf_1950$sd_2, lag=5, pl=FALSE)
+acf(acf_1960$sd_2, lag=5, pl=FALSE)
+acf(acf_1970$sd_2, lag=5, pl=FALSE)
+acf(acf_1980$sd_2, lag=5, pl=FALSE)
+acf(acf_1990$sd_2, lag=5, pl=FALSE)
+acf(acf_2000$sd_2, lag=5, pl=FALSE)
+acf(acf_2010$sd_2, lag=5, pl=FALSE)
+
+#put the output into an excel file, reading it back into R. #failingbutwinning
+
+
+steamboat_autocorrelation <- read_excel("data_clean/steamboat_autocorrelation.xlsx")
+#View(steamboat_autocorrelation)
+
+steamboat_autocorrelation <- steamboat_autocorrelation %>% 
+  filter(Decade != "2010_2022")
+
+ggplot(steamboat_autocorrelation, aes(x = Decade))+
+  geom_point(aes(y = lag_1, color = "lag_1"), size =7)+
+  geom_point(aes(y = lag_2, color = "lag_2"), size =5)+
+  geom_point(aes(y = lag_3, color = "lag_3"), size =4)+
+  theme_few()+
+  scale_colour_manual(name = "lags", values=c("lag_1"="red", "lag_2" = "purple", "lag_3" ="blue"))+#, "noaa_morrisey" = "red", "oyler" = "purple"))+#, "oyler_noaa_conus" = "grey"))+
+  xlab("Decade")+
+  ylab("Autocorrelation")
+
+```
+
+
+```{r mean temperature}
+
+coop_steamboat_clean_annual_t <- coop_steamboat_clean %>% 
+  group_by(waterYear) %>% 
+  mutate(mean_temp_annual = mean(avg_T_c)) %>%  
+  distinct(waterYear, .keep_all = TRUE)
+
+ggplot(coop_steamboat_clean_annual_t, aes(x = waterYear, y = mean_temp_annual)) +
+  geom_point() + #lwd = 2) +
+  theme_few() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ylab('Mean annual temperature (°C)') + 
+  xlab('Water Year')
+
+
+```
+
 
 
 
@@ -1130,7 +1224,7 @@ COOP_daily_wy_aver_91_20 <- COOP_daily_wy_aver_91_20 %>%
   mutate(nmbr = n())
   
 
-COOP_standard_dev_91_20 <- COOP_daily_wy_aver_61_90 %>% 
+COOP_standard_dev_91_20 <- COOP_daily_wy_aver_91_20 %>% 
   group_by(waterYear) %>% 
   mutate(residual = (all_ave_temp-aver_ann_temp)+avg_T_c-aver_day_temp) %>% 
   mutate(deviation = abs(residual-lag(residual)))
@@ -1254,13 +1348,19 @@ COOP_standard_dev_all_91_20_winter %>%
   kable_styling() %>%
   scroll_box(width='250px',height='500px')
 
+#This was trying to help Nick Chohan out with a figure issue. Fail!
+
+coef(lm(waterYear ~ sd_2, data= COOP_standard_dev_all_91_20_winter))
+#str(COOP_standard_dev_all_91_20_winter)
+ 
 ggplot(COOP_standard_dev_all_91_20_winter, aes(x = waterYear, y = sd_2))+#, color = waterYear)) +
   geom_line(size= 0.7) +
-  #geom_line(aes) +
+  #geom_abline(xintercept = 1990, slope = 0.01333333, size =1) +
   theme_few() +
   geom_smooth(method = "lm", se=FALSE) +
-  ylab('SD') + 
+  ylab('SD') +
   xlab('Water year')
+
 
 ```
 
@@ -1464,17 +1564,14 @@ climate_norm <- left_join(climate_norm, COOP_daily_wy_aver_1901_1930_CN2, by= 'w
 ggplot(climate_norm, aes(x=waterDay)) +  
          #scale_size_manual(values=c("FALSE"=5,"TRUE"=8)) +
   #scale_color_manual(values=c("FALSE"='#CC0000',"TRUE"='black')) +
-geom_line(aes(y = date_temp.x), size =1, color = "orange")+
-  geom_line(aes(y = date_temp.y), size =1, color = "darkgreen")+
-  geom_line(aes(y = date_temp.x.x), size =1, color = "purple")+
-  geom_line(aes(y = date_temp.y.y), size =1, color= "red")+
+geom_line(aes(y = date_temp.x, color = "1991-2022"), size =1)+
+  geom_line(aes(y = date_temp.y, color = "1961-1990"), size =1)+
+  geom_line(aes(y = date_temp.x.x, color = "1931-1960"), size =1)+
+  geom_line(aes(y = date_temp.y.y, color= "1901-1930"), size =1)+
   theme_few()+
-  scale_colour_manual("", breaks=c("date_temp.x","date_temp.y","date_temp.x.x", "date_temp.y.y"), values=c("date_temp.x" = "orange", "date_temp.y" = "darkgreen", "date_temp.x.x" = "purple", "date_temp.y.y" = "red"))+
+  scale_colour_manual(name = "climate normals", values=c("1991-2022" = "orange", "1961-1990" = "darkgreen", "1931-1960" = "purple", "1901-1930" = "red"))+
   xlab("Day of Year")+
   ylab("Average temperature")
 
-
-
-    
 ```
 
